@@ -11,7 +11,8 @@ body{background:#f0f7fb;color:#333;padding:20px;min-height:100vh;}
 .header h1{font-size:42px;color:#3474a7;margin-bottom:8px;}
 .header p{font-size:16px;color:#666;}
 .wrap{max-width:900px;margin:0 auto;}
-.chapter-wrap{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.unit-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chapter-wrap{display:grid;grid-template-columns:1fr;gap:14px;}
 .card{background:#fff;border-radius:16px;padding:18px;border:2px solid #b0d5ec;box-shadow:0 3px 8px #00000010;cursor:pointer;transition:0.2s;}
 .card:hover{transform:translateY(-3px);box-shadow:0 5px 12px #00000018;border-color:#79aed1;}
 .card h3{font-size:16px;margin-bottom:6px;color:#333;}
@@ -38,14 +39,26 @@ body{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-se
 </style>
 </head>
 <body>
-<!--首页：章节选择页-->
+<!--首页：章选择页-->
 <div id="pageHome" class="page active">
   <div class="header">
     <h1>🌍 地理闯关</h1>
-    <p>七年级上册 · 24新版人教版<br>选择小节开始挑战，每次随机15题</p>
+    <p>七年级上册 · 24新版人教版<br>先选章节，再选小节开始挑战</p>
   </div>
-  <div class="wrap chapter-wrap" id="chapterList"></div>
+  <div class="wrap unit-grid" id="chapterList"></div>
   <p class="tip">3条生命 · 连击加分 · 防复制已开启</p>
+</div>
+
+<!--小节选择页-->
+<div id="pageChapter" class="page">
+  <div class="header">
+    <h2 id="chapterTitle" style="font-size:28px;color:#3474a7;margin-bottom:8px;"></h2>
+    <p>选择小节开始刷题</p>
+  </div>
+  <div class="wrap chapter-wrap" id="sectionList"></div>
+  <div style="text-align:center;margin-top:20px;">
+    <button onclick="backHome()" style="background:#6c757d;">← 返回章节目录</button>
+  </div>
 </div>
 
 <!--答题页-->
@@ -68,33 +81,76 @@ body{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-se
     <h2>🎉 闯关结束</h2>
     <p id="resultText" style="line-height:1.8;font-size:17px;"></p>
     <button onclick="retryChapter()">再考一次</button>
+    <button onclick="backToChapter()" style="margin-left:8px;background:#6c757d;">返回小节列表</button>
     <button onclick="backHome()" style="margin-left:8px;background:#6c757d;">返回首页</button>
   </div>
 </div>
 
 <script>
-//目录配置
-const chapterData = [
-  {name:"地理第一课",id:"u0c0",icon:"📚"},
-  {name:"第一节 地球的宇宙环境",id:"u1c1",icon:"🌌"},
-  {name:"第二节 地球与地球仪",id:"u1c2",icon:"🌐"},
-  {name:"第三节 地球的运动",id:"u1c3",icon:"🔄"},
-  {name:"第一节 地图的阅读",id:"u2c1",icon:"🗺️"},
-  {name:"第二节 地形图的判读",id:"u2c2",icon:"⛰️"},
-  {name:"第三节 地图的选择和应用",id:"u2c3",icon:"📱"},
-  {name:"跨学科 美化校园",id:"u2c4",icon:"🌳"},
-  {name:"第一节 大洲和大洋",id:"u3c1",icon:"🌊"},
-  {name:"第二节 世界的地形",id:"u3c2",icon:"🏔️"},
-  {name:"第三节 海陆的变迁",id:"u3c3",icon:"🔄"},
-  {name:"第一节 多变的天气",id:"u4c1",icon:"⛅"},
-  {name:"第二节 气温的变化与分布",id:"u4c2",icon:"🌡️"},
-  {name:"第三节 降水的变化与分布",id:"u4c3",icon:"🌧️"},
-  {name:"第四节 世界的气候",id:"u4c4",icon:"🌦️"},
-  {name:"第一节 人口与人种",id:"u5c1",icon:"👥"},
-  {name:"第二节 城镇与乡村",id:"u5c2",icon:"🏘️"},
-  {name:"第三节 多样的文化",id:"u5c3",icon:"🎭"},
-  {name:"第六章 发展与合作",id:"u6c1",icon:"🤝"},
-  {name:"跨学科 探索外来文化",id:"u6c2",icon:"🌍"},
+//章节目录配置（按章分组）
+const chapters = [
+  {
+    name: "地理第一课",
+    icon: "📚",
+    sections: [
+      {name:"与同学们谈地理", id:"u0c0"}
+    ]
+  },
+  {
+    name: "第一章 地球",
+    icon: "🌍",
+    sections: [
+      {name:"第一节 地球的宇宙环境", id:"u1c1"},
+      {name:"第二节 地球与地球仪", id:"u1c2"},
+      {name:"第三节 地球的运动", id:"u1c3"},
+    ]
+  },
+  {
+    name: "第二章 地图",
+    icon: "🗺️",
+    sections: [
+      {name:"第一节 地图的阅读", id:"u2c1"},
+      {name:"第二节 地形图的判读", id:"u2c2"},
+      {name:"第三节 地图的选择和应用", id:"u2c3"},
+      {name:"跨学科 美化校园", id:"u2c4"},
+    ]
+  },
+  {
+    name: "第三章 陆地和海洋",
+    icon: "🌊",
+    sections: [
+      {name:"第一节 大洲和大洋", id:"u3c1"},
+      {name:"第二节 世界的地形", id:"u3c2"},
+      {name:"第三节 海陆的变迁", id:"u3c3"},
+    ]
+  },
+  {
+    name: "第四章 天气与气候",
+    icon: "⛅",
+    sections: [
+      {name:"第一节 多变的天气", id:"u4c1"},
+      {name:"第二节 气温的变化与分布", id:"u4c2"},
+      {name:"第三节 降水的变化与分布", id:"u4c3"},
+      {name:"第四节 世界的气候", id:"u4c4"},
+    ]
+  },
+  {
+    name: "第五章 居民与文化",
+    icon: "👥",
+    sections: [
+      {name:"第一节 人口与人种", id:"u5c1"},
+      {name:"第二节 城镇与乡村", id:"u5c2"},
+      {name:"第三节 多样的文化", id:"u5c3"},
+    ]
+  },
+  {
+    name: "第六章 发展与合作",
+    icon: "🤝",
+    sections: [
+      {name:"发展与合作", id:"u6c1"},
+      {name:"跨学科 探索外来文化", id:"u6c2"},
+    ]
+  },
 ];
 
 //题库
@@ -846,17 +902,41 @@ function shuffle(arr){
   return newArr;
 }
 
-//渲染章节列表
+//渲染章节目录（首页）
 function renderChapters(){
   const listWrap = document.getElementById("chapterList");
   listWrap.innerHTML = "";
-  chapterData.forEach(ch=>{
+  chapters.forEach((ch, idx)=>{
     const div = document.createElement("div");
     div.className = "card";
-    div.innerHTML = `<div class="img-area">${ch.icon}</div><h3>${ch.name}</h3><p>题库${questionBank[ch.id].length}题，每次随机15题</p>`;
-    div.onclick = ()=>startQuiz(ch.id);
+    const totalQ = ch.sections.reduce((sum, s)=>sum + questionBank[s.id].length, 0);
+    div.innerHTML = `<div class="img-area">${ch.icon}</div><h3>${ch.name}</h3><p>${ch.sections.length}小节 · 共${totalQ}题</p>`;
+    div.onclick = ()=>showSections(idx);
     listWrap.appendChild(div);
   });
+}
+
+//显示某一章的小节列表
+let currentChapterIdx = 0;
+function showSections(chapterIdx){
+  currentChapterIdx = chapterIdx;
+  const ch = chapters[chapterIdx];
+  document.getElementById("chapterTitle").innerText = ch.icon + " " + ch.name;
+  const listWrap = document.getElementById("sectionList");
+  listWrap.innerHTML = "";
+  ch.sections.forEach(sec=>{
+    const div = document.createElement("div");
+    div.className = "card";
+    div.innerHTML = `<h3>${sec.name}</h3><p>题库${questionBank[sec.id].length}题，每次随机15题</p>`;
+    div.onclick = ()=>startQuiz(sec.id);
+    listWrap.appendChild(div);
+  });
+  switchPage("pageChapter");
+}
+
+//返回章节列表
+function backToChapter(){
+  showSections(currentChapterIdx);
 }
 
 //开始刷题
